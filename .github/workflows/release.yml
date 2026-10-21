@@ -1,0 +1,64 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, e.g. v1.0.0"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-workflows-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Publish release
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    permissions:
+      contents: write
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      VERSION: ${{ inputs.version }}
+      RELEASE_SHA: ${{ github.sha }}
+
+    steps:
+      - name: Validate version and check tag
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$VERSION" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::Expected a stable version like v1.0.0"
+            exit 1
+          fi
+
+          # API errors must fail the job, not look like an absent tag.
+          refs="$(gh api \
+            "repos/$GH_REPO/git/matching-refs/tags/$VERSION")"
+
+          if jq -e --arg ref "refs/tags/$VERSION" \
+            'any(.[]; .ref == $ref)' <<< "$refs" >/dev/null; then
+            echo "::error::Tag $VERSION already exists"
+            exit 1
+          fi
+
+      - name: Create tag and GitHub Release
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          gh release create "$VERSION" \
+            --repo "$GH_REPO" \
+            --target "$RELEASE_SHA" \
+            --title "$VERSION" \
+            --generate-notes

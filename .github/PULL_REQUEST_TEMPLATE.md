@@ -39,5 +39,6 @@ Examples:
 
 - [ ] PR title and commit messages follow Conventional Commits
 - [ ] Workflow changes have been validated, or limitations are documented
+- [ ] All `uses: actions/*` references are pinned to a full commit SHA with the corresponding version in an inline comment (e.g. `# v7.1.0`)
 - [ ] Breaking changes for consuming repositories are documented, if applicable
 - [ ] No secrets or credentials are included

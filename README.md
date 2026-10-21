@@ -23,6 +23,36 @@ This repository contains reusable GitHub Actions workflows, composite actions, a
 
 Shared workflows use the `reusable-` prefix and contain the analysis steps.
 
+## Usage
+
+Add `.github/workflows/codeql.yml` to your repository:
+
+```yaml
+name: CodeQL
+...
+jobs:
+  codeql:
+    uses: codemie-ai/ci-workflows/.github/workflows/reusable-codeql.yml@dfb48c2949766afc371ab507f4a2da6251b261ea # v1.0.0 (example)
+    with:
+      language: javascript-typescript
+...
+```
+
+Replace the example SHA and version comment with those of the release you want to use.
+Update the pinned version through a pull request.
+
+## Releasing
+
+1. Merge changes into `main` and confirm CI has passed.
+2. Open **Actions → Release → Run workflow**, select **main**, and enter
+   a new version such as `v1.0.0`.
+3. Run the workflow: it creates the tag and GitHub Release with generated notes.
+
+All workflows share one version: patch for fixes, minor for compatible additions,
+major for breaking changes. Only stable `vMAJOR.MINOR.PATCH` versions are accepted;
+existing tags cannot be reused. The release job runs only on `main` and does not
+check CI results itself.
+
 ---
 
 <div align="center">
