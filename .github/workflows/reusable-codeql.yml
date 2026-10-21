@@ -1,0 +1,42 @@
+name: Reusable CodeQL
+
+on:
+  workflow_call:
+    inputs:
+      language:
+        description: CodeQL language to analyze with build-mode none
+        type: string
+        default: javascript-typescript
+      runner:
+        description: GitHub Actions runner label for CodeQL analysis
+        type: string
+        default: ubuntu-latest
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: CodeQL Analysis (${{ inputs.language }})
+    runs-on: ${{ inputs.runner }}
+
+    permissions:
+      contents: read
+      security-events: write
+      packages: read
+      actions: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@48870fdd6b42ee6474ec4207209ff87609271a5e # v4.39.0
+        with:
+          languages: ${{ inputs.language }}
+          build-mode: none
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@48870fdd6b42ee6474ec4207209ff87609271a5e # v4.39.0
+        with:
+          category: /language:${{ inputs.language }}
