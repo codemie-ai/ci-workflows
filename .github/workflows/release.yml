@@ -12,8 +12,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-workflows-release
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  git_cliff_version: v2.14.2
 
 jobs:
   release:
@@ -60,27 +63,14 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Setup Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '24'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
       - name: Generate release notes
-        shell: bash
+        uses: orhun/git-cliff-action@a9a95522b26fe6403f7bb24031f21fb573d0f5ff # v4.9.1
+        with:
+          version: ${{ env.git_cliff_version }}
+          config: cliff.toml
+          args: --github-repo ${{ github.repository }} --unreleased --tag ${{ inputs.version }} --output release-notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-
-          npm run release:notes -- \
-            --github-repo "$GH_REPO" \
-            --unreleased \
-            --tag "$VERSION" \
-            --output release-notes.md
 
       - name: Create tag and GitHub Release
         shell: bash

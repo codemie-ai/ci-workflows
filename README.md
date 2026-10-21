@@ -20,6 +20,7 @@ This repository contains reusable GitHub Actions workflows, composite actions, a
 | Workflow | Description |
 |---|---|
 | `reusable-codeql.yml` | Shared CodeQL analysis, called via `workflow_call`; defaults to JavaScript/TypeScript with `build-mode: none` |
+| `reusable-commit-lint.yml` | Shared Conventional Commits and PR title validation, called via `workflow_call` |
 
 Shared workflows use the `reusable-` prefix and contain the analysis steps.
 
@@ -56,8 +57,8 @@ configured in `cliff.toml`; PR labels are not required. Breaking changes are
 marked explicitly. Non-conventional commits (such as merge commits) are omitted,
 so preserve the Conventional Commits format when squash-merging PRs.
 
-git-cliff is installed as an npm development dependency and run via
-`npm run release:notes`. Notes show the version and release date, and each change
+git-cliff is executed via the `orhun/git-cliff-action` GitHub Action.
+Notes show the version and release date, and each change
 links to its PR (when available) and commit. GitHub metadata is fetched using the
 workflow token; a New Contributors section is included when there are first-time
 contributors.
