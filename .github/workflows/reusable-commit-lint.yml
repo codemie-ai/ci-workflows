@@ -21,7 +21,7 @@ env:
 
 jobs:
   lint:
-    name: Commit & PR Validation
+    name: Commit Message & PR Title Check
     runs-on: ${{ inputs.runner }}
 
     steps:
