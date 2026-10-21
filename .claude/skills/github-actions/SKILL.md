@@ -12,6 +12,7 @@ Read only the reference required for the task:
 | Task | Reference |
 |---|---|
 | Pin third-party and official actions by full commit SHA with version tag comment (`uses: actions/...@hash # tag`) | `references/action-pinning.md` |
+| Call reusable workflows without redundant caller job names to avoid UI label truncation | `references/reusable-workflows.md` |
 | Prevent script injection; safely pass untrusted GitHub context via environment variables (`env:`) | `references/script-injection.md` |
 | Emit workflow annotations (`::error::`, `::warning::`, `::notice::`, `::debug::`); attach file and line numbers; group verbose logs into collapsible sections (`::group::`) | `references/logging.md` |
 | Generate Markdown reports on the workflow run page using `$GITHUB_STEP_SUMMARY`; format status tables, checklists, and collapsible `<details>` blocks | `references/step-summary.md` |
