@@ -2,6 +2,8 @@
 
 Workflow commands format output in the GitHub Actions runner, creating visual annotations on Pull Requests and Checks pages.
 
+Official docs: [Workflow commands for GitHub Actions](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/workflow-commands-for-github-actions)
+
 ## Log Levels (Workflow Commands)
 
 Use GitHub workflow commands instead of plain `echo` for statuses, warnings, and errors.

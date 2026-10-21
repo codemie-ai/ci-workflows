@@ -2,11 +2,12 @@
 
 `$GITHUB_STEP_SUMMARY` renders GitHub-flavored Markdown directly on the GitHub Actions workflow run summary page.
 
+Official docs: [Workflow commands: Adding a job summary](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/workflow-commands-for-github-actions#adding-a-job-summary)
+
 ## Key Rules
 
 1. **Always append (`>>`)**: Never use single `>` redirection, or you will overwrite summaries from previous steps.
-2. **Prevent Script Injection**: Do not interpolate untrusted context into inline scripts. Pass variables through `env:`.
-3. **Execute reliably**: Use `if: always()` on summary steps so reports render even when earlier steps fail.
+2. **Execute reliably**: Use `if: always()` on summary steps so reports render even when earlier steps fail.
 
 ## Basic Summary Pattern
 
