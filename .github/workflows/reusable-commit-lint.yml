@@ -39,11 +39,8 @@ jobs:
       - name: Install commitlint
         run: npm install --no-save @commitlint/cli@${commitlint_version} @commitlint/config-conventional@${commitlint_config_version}
 
-      - name: Print versions
+      - name: Print version of commitlint
         run: |
-          git --version
-          node --version
-          npm --version
           npx commitlint --version
 
       - name: Ensure commitlint configuration
