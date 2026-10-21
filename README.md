@@ -46,7 +46,21 @@ Update the pinned version through a pull request.
 1. Merge changes into `main` and confirm CI has passed.
 2. Open **Actions → Release → Run workflow**, select **main**, and enter
    a new version such as `v1.0.0`.
-3. Run the workflow: it creates the tag and GitHub Release with generated notes.
+3. Run the workflow: it creates the tag and GitHub Release with notes generated
+   by git-cliff from Conventional Commits.
+
+Release notes include changes since the previous stable version tag reachable
+from the release commit, or the entire history for the first release. Sections
+for features, fixes, documentation, dependencies, CI, and other changes are
+configured in `cliff.toml`; PR labels are not required. Breaking changes are
+marked explicitly. Non-conventional commits (such as merge commits) are omitted,
+so preserve the Conventional Commits format when squash-merging PRs.
+
+git-cliff is installed as an npm development dependency and run via
+`npm run release:notes`. Notes show the version and release date, and each change
+links to its PR (when available) and commit. GitHub metadata is fetched using the
+workflow token; a New Contributors section is included when there are first-time
+contributors.
 
 All workflows share one version: patch for fixes, minor for compatible additions,
 major for breaking changes. Only stable `vMAJOR.MINOR.PATCH` versions are accepted;

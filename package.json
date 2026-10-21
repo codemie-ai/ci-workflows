@@ -2,10 +2,12 @@
   "name": "ci-workflows",
   "private": true,
   "scripts": {
-    "commitlint": "commitlint"
+    "commitlint": "commitlint",
+    "release:notes": "git-cliff --config cliff.toml"
   },
   "devDependencies": {
     "@commitlint/cli": "21.2.4",
-    "@commitlint/config-conventional": "21.2.4"
+    "@commitlint/config-conventional": "21.2.4",
+    "git-cliff": "2.14.2"
   }
 }
