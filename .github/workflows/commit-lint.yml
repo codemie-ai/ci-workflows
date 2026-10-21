@@ -15,5 +15,5 @@ concurrency:
 
 jobs:
   commit-lint:
-    name: Commit Message & PR Title Check
+    name: Commit & PR Validation
     uses: ./.github/workflows/reusable-commit-lint.yml
