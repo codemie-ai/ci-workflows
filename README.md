@@ -25,6 +25,46 @@ This repository contains reusable GitHub Actions workflows, composite actions, a
 
 Shared workflows use the `reusable-` prefix and contain the analysis steps.
 
+## Composite Actions
+
+| Action | Description |
+|---|---|
+| `actions/build-site` | Checks out the caller repository, sets up Node.js with npm caching, installs dependencies, and builds the site |
+
+`build-site` accepts `node-version` (default `'24'`), `install-command`
+(default `npm ci`), and `build-command` (default `npm run build`).
+It requires `contents: read` permission and an npm lockfile in the repository
+root. Build environment variables can be supplied through `env` on the calling
+step. Artifact uploads and deployment remain the responsibility of the caller.
+
+```yaml
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Build website
+        uses: codemie-ai/ci-workflows/actions/build-site@<COMMIT_SHA>
+        with:
+          node-version: '24'
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: site-build
+          path: ./build
+```
+
+Replace `<COMMIT_SHA>` with a commit containing the action before using this
+example. The action performs checkout itself; callers do not need a separate
+checkout step.
+
+`reusable-deploy-pages.yml` uses the remote action reference because checkout in
+a called workflow retrieves the caller repository, not `ci-workflows`.
+Its initial `@main` reference must be pinned to a commit containing the action
+after merge and before releasing; update that pin whenever the shared build
+action needs to change.
+
 ## Usage
 
 Add `.github/workflows/codeql.yml` to your repository:

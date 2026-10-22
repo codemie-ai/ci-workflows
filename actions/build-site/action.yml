@@ -1,0 +1,35 @@
+name: Build site
+description: Checkout repository, install Node.js dependencies and build website
+
+inputs:
+  node-version:
+    description: Node.js version
+    default: '24'
+  install-command:
+    description: Command to install dependencies
+    default: npm ci
+  build-command:
+    description: Command to build website
+    default: npm run build
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Setup Node.js
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: npm
+
+    - name: Install dependencies
+      shell: bash
+      run: ${{ inputs.install-command }}
+
+    - name: Build website
+      shell: bash
+      run: ${{ inputs.build-command }}
