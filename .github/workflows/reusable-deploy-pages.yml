@@ -1,0 +1,42 @@
+name: Reusable Deploy Pages
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: GitHub Actions runner label
+        type: string
+        default: ubuntu-latest
+      artifact-name:
+        description: Name of the previously uploaded GitHub Pages artifact
+        type: string
+        default: github-pages
+      environment-name:
+        description: Target environment name
+        type: string
+        default: github-pages
+    outputs:
+      page-url:
+        description: The URL of the deployed GitHub Pages site
+        value: ${{ jobs.deploy.outputs['page-url'] }}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    name: Deploy to GitHub Pages
+    environment:
+      name: ${{ inputs.environment-name }}
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ${{ inputs.runner }}
+    outputs:
+      page-url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        with:
+          artifact_name: ${{ inputs.artifact-name }}

@@ -21,8 +21,46 @@ This repository contains reusable GitHub Actions workflows, composite actions, a
 |---|---|
 | `reusable-codeql.yml` | Shared CodeQL analysis, called via `workflow_call`; defaults to JavaScript/TypeScript with `build-mode: none` |
 | `reusable-commit-lint.yml` | Shared Conventional Commits and PR title validation, called via `workflow_call` |
+| `reusable-deploy-pages.yml` | Deploys a previously uploaded GitHub Pages artifact, called via `workflow_call` |
+| `reusable-secrets-detection.yml` | Shared Gitleaks secrets detection with full-history checkout, called via `workflow_call` |
 
-Shared workflows use the `reusable-` prefix and contain the analysis steps.
+Shared workflows use the `reusable-` prefix and contain shared CI jobs.
+
+## Composite Actions
+
+| Action | Description |
+|---|---|
+| `actions/setup-node-project` | Checks out the caller repository, sets up Node.js with npm caching, and installs dependencies |
+
+`setup-node-project` accepts `node-version` (default `'24'`), `ref` (default
+empty, using the event's checkout ref), `fetch-depth` (default `'1'`; use `'0'`
+for full history), and `install-command` (default `npm ci`).
+It requires `contents: read` permission and an npm lockfile in the repository
+root. Use it before project-specific checks:
+
+```yaml
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Prepare Node.js project
+        uses: codemie-ai/ci-workflows/actions/setup-node-project@<COMMIT_SHA>
+      - name: Run checks
+        run: npm run typecheck
+```
+
+For checks of the PR head commit, pass
+`ref: ${{ github.event.pull_request.head.sha }}` through the action's `with`.
+The action performs checkout itself with `persist-credentials: false`.
+Replace `<COMMIT_SHA>` with a commit containing the action.
+
+Build commands, build environment variables, and artifact uploads belong in
+the caller workflow. Shared actions and workflows do not call other components
+from this repository, so callers can pin them all to one release commit.
+For pre-merge testing, pin to a full commit SHA from the feature branch rather
+than using the branch name.
 
 ## Usage
 
@@ -41,6 +79,65 @@ jobs:
 
 Replace the example SHA and version comment with those of the release you want to use.
 Update the pinned version through a pull request.
+
+### GitHub Pages
+
+Build and upload the Pages artifact in the caller, then invoke the deployment
+workflow in a dependent job:
+
+```yaml
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare Node.js project
+        uses: codemie-ai/ci-workflows/actions/setup-node-project@<COMMIT_SHA>
+      - name: Build website
+        run: npm run build
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ./build
+
+  deploy:
+    needs: build
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: codemie-ai/ci-workflows/.github/workflows/reusable-deploy-pages.yml@<COMMIT_SHA>
+```
+
+Replace both `<COMMIT_SHA>` placeholders with the same commit containing the
+shared components. The deployment workflow accepts `runner` (default
+`ubuntu-latest`), `artifact-name` (default `github-pages`), and
+`environment-name` (default `github-pages`), and returns `page-url`.
+It does not check out code, install dependencies, build, or upload artifacts.
+It expects an artifact uploaded with `actions/upload-pages-artifact` in the
+same workflow run. If overriding `artifact-name`, use the same name for upload
+and deployment.
+
+### Secrets Detection
+
+```yaml
+jobs:
+  secrets-detection:
+    name: Secrets Detection
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: read
+    uses: codemie-ai/ci-workflows/.github/workflows/reusable-secrets-detection.yml@<COMMIT_SHA>
+```
+
+Replace `<COMMIT_SHA>` with a commit containing the workflow.
+The optional `runner` input defaults to `ubuntu-latest`. The Gitleaks version
+is managed centrally in the shared workflow, and `GITHUB_TOKEN` is available
+automatically; `secrets: inherit` is not required.
+Keep job dependencies (`needs`) and event conditions in the caller.
 
 ## Releasing
 
