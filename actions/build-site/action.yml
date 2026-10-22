@@ -16,7 +16,7 @@ runs:
   using: composite
   steps:
     - name: Prepare Node.js project
-      uses: codemie-ai/ci-workflows/actions/setup-node-project@epmcdme-16232-v3
+      uses: codemie-ai/ci-workflows/actions/setup-node-project@a797f435a01863295dda1f88f9664682a7adf54d
       with:
         node-version: ${{ inputs.node-version }}
         install-command: ${{ inputs.install-command }}
