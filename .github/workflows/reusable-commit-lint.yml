@@ -1,0 +1,105 @@
+name: Reusable Commit Lint
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: GitHub Actions runner label
+        type: string
+        default: ubuntu-latest
+      node-version:
+        description: Node.js version
+        type: string
+        default: '24'
+
+permissions:
+  contents: read
+
+env:
+  commitlint_version: 21.2.4
+  commitlint_config_version: 21.2.4
+
+jobs:
+  lint:
+    name: Commit & PR Validation
+    runs-on: ${{ inputs.runner }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Install commitlint
+        run: npm install --no-save @commitlint/cli@${commitlint_version} @commitlint/config-conventional@${commitlint_config_version}
+
+      - name: Print version of commitlint
+        run: |
+          npx commitlint --version
+
+      - name: Ensure commitlint configuration
+        shell: bash
+        run: |
+          CONFIG_FOUND=false
+          for cfg in \
+            commitlint.config.js commitlint.config.cjs commitlint.config.mjs commitlint.config.ts \
+            .commitlintrc .commitlintrc.json .commitlintrc.yaml .commitlintrc.yml .commitlintrc.js .commitlintrc.cjs; do
+            if [ -f "$cfg" ]; then
+              echo "::notice::Using repository commitlint configuration: $cfg"
+              CONFIG_FOUND=true
+              break
+            fi
+          done
+
+          if [ "$CONFIG_FOUND" = "false" ] && [ -f "package.json" ]; then
+            if grep -q '"commitlint"' package.json 2>/dev/null; then
+              echo "::notice::Using commitlint configuration from package.json"
+              CONFIG_FOUND=true
+            fi
+          fi
+
+          if [ "$CONFIG_FOUND" = "false" ]; then
+            echo "::notice::No commitlint configuration found. Generating default .commitlintrc.json"
+            cat <<'EOF' > .commitlintrc.json
+          {
+            "extends": ["@commitlint/config-conventional"],
+            "rules": {
+              "body-max-line-length": [2, "always", 300],
+              "footer-max-line-length": [2, "always", 300]
+            }
+          }
+          EOF
+          fi
+
+      - name: Validate PR commits
+        run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
+
+      - name: Validate PR title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: echo "$PR_TITLE" | npx commitlint --verbose
+
+      - name: Validation summary
+        if: always()
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          echo "### Conventional Commits Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **PR Title:** \`$PR_TITLE\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Base branch:** \`$BASE_REF\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Head branch:** \`$HEAD_REF\`" >> $GITHUB_STEP_SUMMARY
+          if [ "$JOB_STATUS" = "success" ]; then
+            echo "- **Result:** Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Result:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
