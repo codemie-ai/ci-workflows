@@ -7,22 +7,10 @@ on:
         description: GitHub Actions runner label
         type: string
         default: ubuntu-latest
-      node-version:
-        description: Node.js version
+      artifact-name:
+        description: Name of the previously uploaded GitHub Pages artifact
         type: string
-        default: '24'
-      install-command:
-        description: Command to install dependencies
-        type: string
-        default: npm ci
-      build-command:
-        description: Command to build website
-        type: string
-        default: npm run build
-      artifact-path:
-        description: Path of the directory containing static files to deploy
-        type: string
-        default: ./build
+        default: github-pages
       environment-name:
         description: Target environment name
         type: string
@@ -38,36 +26,17 @@ permissions:
   id-token: write
 
 jobs:
-  build:
-    name: Build site
-    runs-on: ${{ inputs.runner }}
-
-    permissions:
-      contents: read
-
-    steps:
-      - name: Build website
-        uses: codemie-ai/ci-workflows/actions/build-site@epmcdme-16232-v3
-        with:
-          node-version: ${{ inputs.node-version }}
-          install-command: ${{ inputs.install-command }}
-          build-command: ${{ inputs.build-command }}
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
-        with:
-          path: ${{ inputs.artifact-path }}
-
   deploy:
     name: Deploy to GitHub Pages
     environment:
       name: ${{ inputs.environment-name }}
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ${{ inputs.runner }}
-    needs: build
     outputs:
       page-url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        with:
+          artifact_name: ${{ inputs.artifact-name }}
