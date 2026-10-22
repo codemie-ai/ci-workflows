@@ -22,6 +22,7 @@ This repository contains reusable GitHub Actions workflows, composite actions, a
 | `reusable-codeql.yml` | Shared CodeQL analysis, called via `workflow_call`; defaults to JavaScript/TypeScript with `build-mode: none` |
 | `reusable-commit-lint.yml` | Shared Conventional Commits and PR title validation, called via `workflow_call` |
 | `reusable-deploy-pages.yml` | Shared GitHub Pages build and deployment, called via `workflow_call` |
+| `reusable-secrets-detection.yml` | Shared Gitleaks secrets detection with full-history checkout, called via `workflow_call` |
 
 Shared workflows use the `reusable-` prefix and contain the analysis steps.
 
@@ -29,7 +30,32 @@ Shared workflows use the `reusable-` prefix and contain the analysis steps.
 
 | Action | Description |
 |---|---|
+| `actions/setup-node-project` | Checks out the caller repository, sets up Node.js with npm caching, and installs dependencies |
 | `actions/build-site` | Checks out the caller repository, sets up Node.js with npm caching, installs dependencies, and builds the site |
+
+`setup-node-project` accepts `node-version` (default `'24'`), `ref` (default
+empty, using the event's checkout ref), `fetch-depth` (default `'1'`; use `'0'`
+for full history), and `install-command` (default `npm ci`).
+It requires `contents: read` permission and an npm lockfile in the repository
+root. Use it before project-specific checks:
+
+```yaml
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Prepare Node.js project
+        uses: codemie-ai/ci-workflows/actions/setup-node-project@<COMMIT_SHA>
+      - name: Run checks
+        run: npm run typecheck
+```
+
+For checks of the PR head commit, pass
+`ref: ${{ github.event.pull_request.head.sha }}` through the action's `with`.
+The action performs checkout itself with `persist-credentials: false`.
+Replace `<COMMIT_SHA>` with a commit containing the action.
 
 `build-site` accepts `node-version` (default `'24'`), `install-command`
 (default `npm ci`), and `build-command` (default `npm run build`).
@@ -56,14 +82,15 @@ jobs:
 ```
 
 Replace `<COMMIT_SHA>` with a commit containing the action before using this
-example. The action performs checkout itself; callers do not need a separate
-checkout step.
+example. The action delegates preparation to `setup-node-project`; callers do
+not need a separate checkout or dependency installation step.
 
 `reusable-deploy-pages.yml` uses the remote action reference because checkout in
 a called workflow retrieves the caller repository, not `ci-workflows`.
-Its temporary `@epmcdme-16232-v3` reference allows testing before merge and must
-be pinned to a commit containing the action before releasing; update that pin
-whenever the shared build action needs to change.
+The references from `reusable-deploy-pages.yml` to `build-site` and from
+`build-site` to `setup-node-project` temporarily use `@epmcdme-16232-v3` for
+testing before merge. Pin each reference to a commit containing its target
+before releasing, and update the pins when the shared actions need to change.
 
 ## Usage
 
@@ -82,6 +109,25 @@ jobs:
 
 Replace the example SHA and version comment with those of the release you want to use.
 Update the pinned version through a pull request.
+
+### Secrets Detection
+
+```yaml
+jobs:
+  secrets-detection:
+    name: Secrets Detection
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: read
+    uses: codemie-ai/ci-workflows/.github/workflows/reusable-secrets-detection.yml@<COMMIT_SHA>
+```
+
+Replace `<COMMIT_SHA>` with a commit containing the workflow.
+The optional `runner` input defaults to `ubuntu-latest`. The Gitleaks version
+is managed centrally in the shared workflow, and `GITHUB_TOKEN` is available
+automatically; `secrets: inherit` is not required.
+Keep job dependencies (`needs`) and event conditions in the caller.
 
 ## Releasing
 

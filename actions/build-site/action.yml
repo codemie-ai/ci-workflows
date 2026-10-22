@@ -15,20 +15,11 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Checkout code
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      with:
-        persist-credentials: false
-
-    - name: Setup Node.js
-      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+    - name: Prepare Node.js project
+      uses: codemie-ai/ci-workflows/actions/setup-node-project@epmcdme-16232-v3
       with:
         node-version: ${{ inputs.node-version }}
-        cache: npm
-
-    - name: Install dependencies
-      shell: bash
-      run: ${{ inputs.install-command }}
+        install-command: ${{ inputs.install-command }}
 
     - name: Build website
       shell: bash
