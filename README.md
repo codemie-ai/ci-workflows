@@ -21,6 +21,7 @@ This repository contains reusable GitHub Actions workflows, composite actions, a
 |---|---|
 | `reusable-codeql.yml` | Shared CodeQL analysis, called via `workflow_call`; defaults to JavaScript/TypeScript with `build-mode: none` |
 | `reusable-commit-lint.yml` | Shared Conventional Commits and PR title validation, called via `workflow_call` |
+| `reusable-secrets-detection.yml` | Shared Gitleaks secrets detection with full-history checkout, called via `workflow_call` |
 
 Shared workflows use the `reusable-` prefix and contain the analysis steps.
 
@@ -41,6 +42,25 @@ jobs:
 
 Replace the example SHA and version comment with those of the release you want to use.
 Update the pinned version through a pull request.
+
+### Secrets Detection
+
+```yaml
+jobs:
+  secrets-detection:
+    name: Secrets Detection
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: read
+    uses: codemie-ai/ci-workflows/.github/workflows/reusable-secrets-detection.yml@<COMMIT_SHA>
+```
+
+Replace `<COMMIT_SHA>` with a commit containing the workflow.
+The optional `runner` input defaults to `ubuntu-latest`. The Gitleaks version
+is managed centrally in the shared workflow, and `GITHUB_TOKEN` is available
+automatically; `secrets: inherit` is not required.
+Keep job dependencies (`needs`) and event conditions in the caller.
 
 ## Releasing
 
