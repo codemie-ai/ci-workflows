@@ -48,7 +48,7 @@ Update the pinned version through a pull request.
 ```yaml
 jobs:
   secrets-detection:
-    name: Secrets Detection
+    name: Security
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
