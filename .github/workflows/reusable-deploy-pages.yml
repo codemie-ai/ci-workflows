@@ -47,7 +47,7 @@ jobs:
 
     steps:
       - name: Build website
-        uses: codemie-ai/ci-workflows/actions/build-site@main
+        uses: codemie-ai/ci-workflows/actions/build-site@epmcdme-16232-v3
         with:
           node-version: ${{ inputs.node-version }}
           install-command: ${{ inputs.install-command }}

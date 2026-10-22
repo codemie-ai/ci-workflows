@@ -61,9 +61,9 @@ checkout step.
 
 `reusable-deploy-pages.yml` uses the remote action reference because checkout in
 a called workflow retrieves the caller repository, not `ci-workflows`.
-Its initial `@main` reference must be pinned to a commit containing the action
-after merge and before releasing; update that pin whenever the shared build
-action needs to change.
+Its temporary `@epmcdme-16232-v3` reference allows testing before merge and must
+be pinned to a commit containing the action before releasing; update that pin
+whenever the shared build action needs to change.
 
 ## Usage
 
