@@ -14,5 +14,5 @@ concurrency:
 
 jobs:
   commit-lint:
-    name: Commit & PR Validation
+    name: PR & Commits
     uses: ./.github/workflows/reusable-commit-lint.yml
