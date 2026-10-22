@@ -21,6 +21,7 @@ This repository contains reusable GitHub Actions workflows, composite actions, a
 |---|---|
 | `reusable-codeql.yml` | Shared CodeQL analysis, called via `workflow_call`; defaults to JavaScript/TypeScript with `build-mode: none` |
 | `reusable-commit-lint.yml` | Shared Conventional Commits and PR title validation, called via `workflow_call` |
+| `reusable-deploy-pages.yml` | Shared GitHub Pages build and deployment, called via `workflow_call` |
 
 Shared workflows use the `reusable-` prefix and contain the analysis steps.
 
