@@ -61,6 +61,8 @@ The optional `runner` input defaults to `ubuntu-latest`. The Gitleaks version
 is managed centrally in the shared workflow, and `GITHUB_TOKEN` is available
 automatically; `secrets: inherit` is not required.
 Keep job dependencies (`needs`) and event conditions in the caller.
+Checkout always fetches full history (`fetch-depth: 0`); callers must not pass
+a `fetch-depth` input.
 
 ## Releasing
 
