@@ -44,7 +44,7 @@ env:
 
 jobs:
   lint:
-    name: PR Title Validation
+    name: Lint
     runs-on: ${{ inputs.runner }}
 
     steps:
