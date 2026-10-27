@@ -1,4 +1,27 @@
-name: Reusable Commit Lint
+# Reusable PR Title Validation Workflow
+#
+# Strategy:
+# Repositories use Squash and Merge so that branch commit history is squashed into
+# a single commit on the default branch (main). The commit message is taken directly
+# from the Pull Request title. Therefore, only the PR title needs to be validated
+# against Conventional Commits, giving developers freedom in naming intermediate branch commits.
+#
+# Required Repository Merge Configuration:
+# To ensure only a single commit with a validated PR title lands in main:
+#
+# Option A: Configure via GitHub CLI (gh):
+#   gh repo edit <owner>/<repo> --enable-squash-merge --enable-rebase-merge=false --enable-merge-commit=false
+#   gh api -X PATCH "repos/<owner>/<repo>" -f squash_merge_commit_title="PR_TITLE" -f squash_merge_commit_message="BLANK"
+#
+# Option B: Configure via GitHub UI (Settings -> General -> Pull Requests):
+#   [x] Allow squash merging
+#       Default commit title: Pull request title
+#       Default commit message: Blank (or Pull request description)
+#   [ ] Allow merge commits (unchecked)
+#   [ ] Allow rebase merging (unchecked)
+#   [x] Automatically delete head branches (checked)
+
+name: Reusable PR Title Lint
 
 on:
   workflow_call:
@@ -14,6 +37,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 env:
   commitlint_version: 21.2.4
@@ -28,7 +52,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          fetch-depth: 1
           persist-credentials: false
 
       - name: Setup Node.js
@@ -77,22 +101,42 @@ jobs:
           EOF
           fi
 
-      - name: Validate PR commits
-        run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
-
       - name: Validate PR title
+        if: github.event_name == 'pull_request'
         env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-        run: echo "$PR_TITLE" | npx commitlint --verbose
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          EVENT_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          PR_TITLE="$EVENT_TITLE"
+          if [ -n "$PR_NUMBER" ] && command -v gh >/dev/null 2>&1; then
+            CURRENT_TITLE=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json title -q '.title' 2>/dev/null || true)
+            if [ -n "$CURRENT_TITLE" ]; then
+              PR_TITLE="$CURRENT_TITLE"
+            fi
+          fi
+          echo "Validating PR title: $PR_TITLE"
+          echo "$PR_TITLE" | npx commitlint --verbose
 
       - name: Validation summary
         if: always()
         env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          EVENT_TITLE: ${{ github.event.pull_request.title }}
           BASE_REF: ${{ github.base_ref }}
           HEAD_REF: ${{ github.head_ref }}
           JOB_STATUS: ${{ job.status }}
         run: |
+          PR_TITLE="$EVENT_TITLE"
+          if [ -n "$PR_NUMBER" ] && command -v gh >/dev/null 2>&1; then
+            CURRENT_TITLE=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json title -q '.title' 2>/dev/null || true)
+            if [ -n "$CURRENT_TITLE" ]; then
+              PR_TITLE="$CURRENT_TITLE"
+            fi
+          fi
           echo "### Conventional Commits Check" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **PR Title:** \`$PR_TITLE\`" >> $GITHUB_STEP_SUMMARY
@@ -102,4 +146,9 @@ jobs:
             echo "- **Result:** Passed" >> $GITHUB_STEP_SUMMARY
           else
             echo "- **Result:** Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "PR titles must follow the Conventional Commits format:" >> $GITHUB_STEP_SUMMARY
+            echo "\`<type>(<optional-scope>): <description>\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Allowed types: \`feat\`, \`fix\`, \`docs\`, \`style\`, \`refactor\`, \`perf\`, \`test\`, \`build\`, \`ci\`, \`chore\`, \`revert\`" >> $GITHUB_STEP_SUMMARY
           fi
