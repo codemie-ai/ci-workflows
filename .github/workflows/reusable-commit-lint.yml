@@ -117,7 +117,8 @@ jobs:
             fi
           fi
           echo "Validating PR title: $PR_TITLE"
-          echo "$PR_TITLE" | npx commitlint --verbose
+          set -o pipefail
+          echo "$PR_TITLE" | npx commitlint --color=false --verbose 2>&1 | tee "${RUNNER_TEMP}/commitlint.log"
 
       - name: Validation summary
         if: always()
@@ -147,8 +148,12 @@ jobs:
           else
             echo "- **Result:** Failed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "PR titles must follow the Conventional Commits format:" >> $GITHUB_STEP_SUMMARY
-            echo "\`<type>(<optional-scope>): <description>\`" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Allowed types: \`feat\`, \`fix\`, \`docs\`, \`style\`, \`refactor\`, \`perf\`, \`test\`, \`build\`, \`ci\`, \`chore\`, \`revert\`" >> $GITHUB_STEP_SUMMARY
+            echo "PR titles must follow the Conventional Commits format: \`<type>(<scope>): <description>\`" >> $GITHUB_STEP_SUMMARY
+            if [ -f "${RUNNER_TEMP}/commitlint.log" ]; then
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "#### Commitlint Output" >> $GITHUB_STEP_SUMMARY
+              echo '```text' >> $GITHUB_STEP_SUMMARY
+              cat "${RUNNER_TEMP}/commitlint.log" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+            fi
           fi
