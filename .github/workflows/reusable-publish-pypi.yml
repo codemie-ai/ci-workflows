@@ -1,0 +1,91 @@
+name: Reusable Publish PyPI
+
+on:
+  workflow_call:
+    inputs:
+      artifact-name:
+        description: Name of the artifact containing distribution packages to publish
+        type: string
+        required: true
+      packages-dir:
+        description: Directory containing packages to publish
+        type: string
+        default: dist/
+        required: false
+      runner:
+        description: GitHub Actions runner label
+        type: string
+        default: ubuntu-latest
+        required: false
+      skip-existing:
+        description: Do not fail if package distribution already exists on PyPI
+        type: boolean
+        default: false
+        required: false
+      attestations:
+        description: Enable support for PEP 740 attestations (Trusted Publishing)
+        type: boolean
+        default: true
+        required: false
+      verbose:
+        description: Show verbose output during publish
+        type: boolean
+        default: true
+        required: false
+    secrets:
+      pypi-api-token:
+        description: PyPI API token for authentication (optional if using Trusted Publishing)
+        required: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: Publish to PyPI
+    runs-on: ${{ inputs.runner }}
+
+    steps:
+      - name: Download distribution artifact
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.packages-dir }}
+
+      - name: Publish to PyPI (Token)
+        if: ${{ secrets.pypi-api-token != '' }}
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: ${{ inputs.packages-dir }}
+          password: ${{ secrets.pypi-api-token }}
+          skip-existing: ${{ inputs.skip-existing }}
+          attestations: ${{ inputs.attestations }}
+          verbose: ${{ inputs.verbose }}
+
+      - name: Publish to PyPI (Trusted Publishing)
+        if: ${{ secrets.pypi-api-token == '' }}
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: ${{ inputs.packages-dir }}
+          skip-existing: ${{ inputs.skip-existing }}
+          attestations: ${{ inputs.attestations }}
+          verbose: ${{ inputs.verbose }}
+
+      - name: Publish summary
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          ARTIFACT_NAME: ${{ inputs.artifact-name }}
+          PACKAGES_DIR: ${{ inputs.packages-dir }}
+        run: |
+          echo "### PyPI Publish Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifact:** \`$ARTIFACT_NAME\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Packages Dir:** \`$PACKAGES_DIR\`" >> $GITHUB_STEP_SUMMARY
+          if [ "$JOB_STATUS" = "success" ]; then
+            echo "- **Result:** Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Result:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
