@@ -40,7 +40,6 @@ jobs:
           persist-credentials: false
 
       - name: Checkout scanner script
-        if: hashFiles('scripts/scan_internal_refs.py') == ''
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: codemie-ai/ci-workflows
@@ -55,15 +54,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p "${RUNNER_TEMP}/ci-workflows-scripts"
-          if [ -f ".ci-workflows-temp/scripts/scan_internal_refs.py" ]; then
-            cp .ci-workflows-temp/scripts/scan_internal_refs.py "${RUNNER_TEMP}/ci-workflows-scripts/scan_internal_refs.py"
-            rm -rf .ci-workflows-temp
-          elif [ -f "scripts/scan_internal_refs.py" ]; then
-            cp scripts/scan_internal_refs.py "${RUNNER_TEMP}/ci-workflows-scripts/scan_internal_refs.py"
-          else
-            echo "::error::Scanner script scan_internal_refs.py not found"
-            exit 1
-          fi
+          cp .ci-workflows-temp/scripts/scan_internal_refs.py "${RUNNER_TEMP}/ci-workflows-scripts/scan_internal_refs.py"
+          rm -rf .ci-workflows-temp
 
       - name: Setup Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
