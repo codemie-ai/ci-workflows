@@ -7,10 +7,6 @@ on:
         description: GitHub Actions runner label
         type: string
         default: ubuntu-latest
-      path:
-        description: Target path to scan for internal references
-        type: string
-        default: .
       python-version:
         description: Python version
         type: string
@@ -56,32 +52,18 @@ jobs:
 
       - name: Scan for internal references
         shell: bash
-        env:
-          SCAN_PATH: ${{ inputs.path }}
         run: |
-          if [ -d "$SCAN_PATH" ]; then
-            SCAN_ARGS=("--tree" "$SCAN_PATH")
-          elif [ -f "$SCAN_PATH" ]; then
-            SCAN_ARGS=("--files" "$SCAN_PATH")
-          else
-            echo "::error::Target path '$SCAN_PATH' does not exist"
-            exit 1
-          fi
-
-          echo "Scanning target: $SCAN_PATH"
           set -o pipefail
-          python3 "${RUNNER_TEMP}/ci-workflows-scripts/scan_internal_refs.py" "${SCAN_ARGS[@]}" 2>&1 | tee "${RUNNER_TEMP}/internal-refs.log"
+          python3 "${RUNNER_TEMP}/ci-workflows-scripts/scan_internal_refs.py" --tree . 2>&1 | tee "${RUNNER_TEMP}/internal-refs.log"
 
       - name: Scan summary
         if: always()
         shell: bash
         env:
-          SCAN_PATH: ${{ inputs.path }}
           JOB_STATUS: ${{ job.status }}
         run: |
           echo "### Internal References Scan" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Target path:** \`$SCAN_PATH\`" >> $GITHUB_STEP_SUMMARY
           if [ "$JOB_STATUS" = "success" ]; then
             echo "- **Result:** Passed (no internal references found)" >> $GITHUB_STEP_SUMMARY
           else
