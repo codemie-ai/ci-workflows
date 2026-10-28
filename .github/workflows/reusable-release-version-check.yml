@@ -21,9 +21,15 @@ on:
         required: false
         default: ''
       base-version:
-        description: Baseline version from manifest (MAJOR.MINOR or MAJOR.MINOR.0)
+        description: Baseline version from manifest (MAJOR.MINOR or MAJOR.MINOR.0). Optional if manifest-path is provided.
         type: string
-        required: true
+        required: false
+        default: ''
+      manifest-path:
+        description: Path to manifest file (package.json or pyproject.toml) to read baseline version from
+        type: string
+        required: false
+        default: ''
       verify-tag-on-main:
         description: Whether to verify that the tagged commit is an ancestor of main
         type: boolean
@@ -89,6 +95,47 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
 
+      - name: Resolve baseline version
+        id: resolve_base
+        shell: bash
+        env:
+          BASE_VERSION: ${{ inputs.base-version }}
+          MANIFEST_PATH: ${{ inputs.manifest-path }}
+          ECOSYSTEM: ${{ inputs.ecosystem }}
+        run: |
+          if [ -n "$BASE_VERSION" ]; then
+            echo "base=$BASE_VERSION" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ -z "$MANIFEST_PATH" ]; then
+            echo "::error::Either base-version or manifest-path must be specified"
+            exit 1
+          fi
+          if [ ! -f "$MANIFEST_PATH" ]; then
+            echo "::error::Manifest file not found: $MANIFEST_PATH"
+            exit 1
+          fi
+
+          BASE=$(python3 -c "
+import json, pathlib, sys
+p = pathlib.Path('$MANIFEST_PATH')
+if '$ECOSYSTEM' == 'npm' or p.suffix == '.json':
+    with open(p, 'rb') as f:
+        print(json.load(f)['version'])
+elif '$ECOSYSTEM' == 'pypi' or p.suffix == '.toml':
+    import tomllib
+    with open(p, 'rb') as f:
+        data = tomllib.load(f)
+        ver = data.get('tool', {}).get('poetry', {}).get('version') or data.get('project', {}).get('version')
+        if not ver:
+            sys.exit('Version not found in pyproject.toml')
+        print(ver)
+else:
+    sys.exit('Unsupported manifest type: ' + str(p))
+")
+          echo "Resolved baseline version $BASE from $MANIFEST_PATH"
+          echo "base=$BASE" >> "$GITHUB_OUTPUT"
+
       - name: Verify tag on commit
         id: tag_commit
         shell: bash
@@ -125,7 +172,7 @@ jobs:
           ECOSYSTEM: ${{ inputs.ecosystem }}
           PACKAGE_NAME: ${{ inputs.package-name }}
           RELEASE_TAG: ${{ inputs.tag }}
-          BASE_VERSION: ${{ inputs.base-version }}
+          BASE_VERSION: ${{ steps.resolve_base.outputs.base }}
           TAG_PREFIX: ${{ inputs.tag-prefix }}
         run: |
           ARGS=("--ecosystem" "$ECOSYSTEM" "--name" "$PACKAGE_NAME" "--tag" "$RELEASE_TAG" "--base" "$BASE_VERSION")
@@ -152,7 +199,7 @@ jobs:
           ECOSYSTEM: ${{ inputs.ecosystem }}
           PACKAGE_NAME: ${{ inputs.package-name }}
           RELEASE_TAG: ${{ inputs.tag }}
-          BASE_VERSION: ${{ inputs.base-version }}
+          BASE_VERSION: ${{ steps.resolve_base.outputs.base }}
           VERSION: ${{ steps.parse_version.outputs.version }}
         run: |
           echo "### Release Version Check" >> "$GITHUB_STEP_SUMMARY"
