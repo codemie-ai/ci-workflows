@@ -81,15 +81,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p "${RUNNER_TEMP}/ci-workflows-scripts"
-          if [ -f .ci-workflows-temp/scripts/release/check_version.py ]; then
-            cp .ci-workflows-temp/scripts/release/check_version.py "${RUNNER_TEMP}/ci-workflows-scripts/check_version.py"
-            rm -rf .ci-workflows-temp
-          elif [ -f scripts/release/check_version.py ]; then
-            cp scripts/release/check_version.py "${RUNNER_TEMP}/ci-workflows-scripts/check_version.py"
-          else
-            echo "::error::check_version.py script not found"
-            exit 1
-          fi
+          cp .ci-workflows-temp/scripts/release/check_version.py "${RUNNER_TEMP}/ci-workflows-scripts/check_version.py"
+          rm -rf .ci-workflows-temp
 
       - name: Setup Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
