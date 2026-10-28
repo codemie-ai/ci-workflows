@@ -1,0 +1,78 @@
+name: Reusable Internal References Scan
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: GitHub Actions runner label
+        type: string
+        default: ubuntu-latest
+      python-version:
+        description: Python version
+        type: string
+        default: '3.12'
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: Scan
+    runs-on: ${{ inputs.runner }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Checkout scanner script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: codemie-ai/ci-workflows
+          ref: main
+          path: .ci-workflows-temp
+          sparse-checkout: |
+            scripts/scan_internal_refs.py
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Setup scanner script
+        shell: bash
+        run: |
+          mkdir -p "${RUNNER_TEMP}/ci-workflows-scripts"
+          cp .ci-workflows-temp/scripts/scan_internal_refs.py "${RUNNER_TEMP}/ci-workflows-scripts/scan_internal_refs.py"
+          rm -rf .ci-workflows-temp
+
+      - name: Setup Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Scan for internal references
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 "${RUNNER_TEMP}/ci-workflows-scripts/scan_internal_refs.py" --tree . 2>&1 | tee "${RUNNER_TEMP}/internal-refs.log"
+
+      - name: Scan summary
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          echo "### Internal References Scan" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "$JOB_STATUS" = "success" ]; then
+            echo "- **Result:** Passed (no internal references found)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Result:** Failed (internal references detected)" >> $GITHUB_STEP_SUMMARY
+            if [ -f "${RUNNER_TEMP}/internal-refs.log" ] && [ -s "${RUNNER_TEMP}/internal-refs.log" ]; then
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "#### Findings" >> $GITHUB_STEP_SUMMARY
+              echo '```text' >> $GITHUB_STEP_SUMMARY
+              cat "${RUNNER_TEMP}/internal-refs.log" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
