@@ -21,6 +21,7 @@ This repository contains reusable GitHub Actions workflows, composite actions, a
 |---|---|
 | `reusable-codeql.yml` | Shared CodeQL analysis, called via `workflow_call`; defaults to JavaScript/TypeScript with `build-mode: none` |
 | `reusable-commit-lint.yml` | Shared Conventional Commits and PR title validation, called via `workflow_call` |
+| `reusable-knip.yml` | Shared Knip analysis for finding unused files, dependencies, and exports, called via `workflow_call` |
 | `reusable-secrets-detection.yml` | Shared Gitleaks secrets detection with full-history checkout, called via `workflow_call` |
 
 Shared workflows use the `reusable-` prefix and contain the analysis steps.
@@ -63,6 +64,27 @@ automatically; `secrets: inherit` is not required.
 Keep job dependencies (`needs`) and event conditions in the caller.
 Checkout always fetches full history (`fetch-depth: 0`); callers must not pass
 a `fetch-depth` input.
+
+### Knip Check
+
+```yaml
+jobs:
+  knip:
+    name: Knip
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    uses: codemie-ai/ci-workflows/.github/workflows/reusable-knip.yml@<COMMIT_SHA>
+    with:
+      working-directory: sdk/codemie-nodejs # optional, defaults to '.'
+      node-version: '20'                    # optional, defaults to '20'
+```
+
+The workflow automatically detects whether `package-lock.json` is present:
+- If `package-lock.json` exists: runs `npm ci` with npm cache enabled.
+- If no lockfile exists: runs `npm install --no-audit --no-fund`.
+- A custom install command can be specified via `install-command`.
+- Custom check command can be specified via `command` (defaults to `npm run knip:check`).
 
 ## Releasing
 

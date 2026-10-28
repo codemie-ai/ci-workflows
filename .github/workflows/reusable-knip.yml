@@ -1,0 +1,79 @@
+name: Reusable Knip
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Directory containing package.json and knip configuration
+        type: string
+        default: .
+      node-version:
+        description: Node.js version
+        type: string
+        default: '20'
+      install-command:
+        description: Custom command to install dependencies (if empty, auto-detects based on package-lock.json)
+        type: string
+        default: ''
+      command:
+        description: Command to run Knip check
+        type: string
+        default: npm run knip:check
+      runner:
+        description: GitHub Actions runner label
+        type: string
+        default: ubuntu-latest
+
+permissions:
+  contents: read
+
+jobs:
+  knip:
+    name: Unused Code & Dependencies Check
+    runs-on: ${{ inputs.runner }}
+
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check for package-lock.json
+        id: check-lockfile
+        run: |
+          if [ -f "package-lock.json" ]; then
+            echo "has_lockfile=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_lockfile=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node.js (with npm cache)
+        if: steps.check-lockfile.outputs.has_lockfile == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+          cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
+
+      - name: Setup Node.js (without cache)
+        if: steps.check-lockfile.outputs.has_lockfile != 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Install dependencies
+        run: |
+          if [ -n "${{ inputs.install-command }}" ]; then
+            ${{ inputs.install-command }}
+          elif [ "${{ steps.check-lockfile.outputs.has_lockfile }}" = "true" ]; then
+            npm ci
+          else
+            npm install --no-audit --no-fund
+          fi
+
+      - name: Run Knip check
+        run: ${{ inputs.command }}
