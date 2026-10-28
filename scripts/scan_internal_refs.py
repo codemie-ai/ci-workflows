@@ -72,7 +72,7 @@ def _line_rules(line: str, extra: Sequence[re.Pattern[str]] = ()) -> list[str]:
     return rules
 
 
-SKIP_DIRS = {".git", ".ci-workflows", "node_modules", "dist", ".venv", ".mypy_cache", ".ruff_cache", ".pytest_cache", "__pycache__"}
+SKIP_DIRS = {".git", "node_modules", "dist", ".venv", ".mypy_cache", ".ruff_cache", ".pytest_cache", "__pycache__"}
 SELF_EXCLUDED = ("scripts/scan_internal_refs.py",)
 
 _LINE_SPLIT = re.compile(r"\r\n|\r|\n")
