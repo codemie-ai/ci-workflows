@@ -37,6 +37,11 @@ on:
         type: boolean
         default: false
         required: false
+      environment:
+        description: GitHub Actions environment name for deployment and secrets
+        type: string
+        default: release
+        required: false
     secrets:
       npm-token:
         description: npm authentication token (optional if using OIDC / provenance)
@@ -50,6 +55,7 @@ jobs:
   publish:
     name: Publish to npm
     runs-on: ${{ inputs.runner }}
+    environment: ${{ inputs.environment }}
 
     steps:
       - name: Download package artifact
