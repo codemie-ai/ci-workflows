@@ -30,11 +30,6 @@ on:
         type: string
         required: false
         default: ''
-      verify-tag-on-main:
-        description: Whether to verify that the tagged commit is an ancestor of main
-        type: boolean
-        required: false
-        default: true
       ci-workflows-ref:
         description: Branch, tag, or SHA of ci-workflows to fetch check_version.py from
         type: string
@@ -155,7 +150,7 @@ else:
           echo "tagged=$TAGGED" >> "$GITHUB_OUTPUT"
 
       - name: Verify tagged commit on main
-        if: inputs.verify-tag-on-main
+        if: github.event_name == 'release'
         shell: bash
         env:
           TAGGED: ${{ steps.tag_commit.outputs.tagged }}
