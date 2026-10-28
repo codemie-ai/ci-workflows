@@ -32,6 +32,11 @@ on:
         type: boolean
         default: true
         required: false
+      environment:
+        description: GitHub Actions environment name for deployment and secrets
+        type: string
+        default: release
+        required: false
     secrets:
       pypi-api-token:
         description: PyPI API token for authentication (optional if using Trusted Publishing)
@@ -45,6 +50,7 @@ jobs:
   publish:
     name: Publish to PyPI
     runs-on: ${{ inputs.runner }}
+    environment: ${{ inputs.environment }}
 
     steps:
       - name: Download distribution artifact
