@@ -1,4 +1,4 @@
-name: Tests
+name: CI
 
 on:
   push:
@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  test:
-    name: Test
+  tooling:
+    name: Tooling tests
     runs-on: ubuntu-latest
 
     steps:
