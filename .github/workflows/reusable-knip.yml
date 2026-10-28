@@ -66,10 +66,13 @@ jobs:
           node-version: ${{ inputs.node-version }}
 
       - name: Install dependencies
+        env:
+          INSTALL_CMD: ${{ inputs.install-command }}
+          HAS_LOCKFILE: ${{ steps.check-lockfile.outputs.has_lockfile }}
         run: |
-          if [ -n "${{ inputs.install-command }}" ]; then
-            ${{ inputs.install-command }}
-          elif [ "${{ steps.check-lockfile.outputs.has_lockfile }}" = "true" ]; then
+          if [ -n "$INSTALL_CMD" ]; then
+            $INSTALL_CMD
+          elif [ "$HAS_LOCKFILE" = "true" ]; then
             npm ci
           else
             npm install --no-audit --no-fund
