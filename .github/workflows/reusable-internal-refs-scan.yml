@@ -12,9 +12,9 @@ on:
         type: string
         default: '3.12'
       ref:
-        description: Branch, tag, or SHA of ci-workflows to fetch scanner script from
+        description: Branch, tag, or SHA of ci-workflows to fetch scanner script from (defaults to workflow ref)
         type: string
-        default: main
+        default: ''
 
 permissions:
   contents: read
@@ -35,7 +35,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: codemie-ai/ci-workflows
-          ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref || job.workflow_sha }}
           path: .ci-workflows-temp
           sparse-checkout: |
             scripts/scan_internal_refs.py
