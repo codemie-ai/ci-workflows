@@ -1,0 +1,122 @@
+name: Reusable Internal References Scan
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: GitHub Actions runner label
+        type: string
+        default: ubuntu-latest
+      path:
+        description: Target path to scan for internal references
+        type: string
+        default: .
+      python-version:
+        description: Python version
+        type: string
+        default: '3.12'
+      ci-workflows-ref:
+        description: Git ref of ci-workflows to fetch scanner script from
+        type: string
+        default: main
+      denylist-path:
+        description: Optional path to private deny-list file
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: Scan
+    runs-on: ${{ inputs.runner }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Checkout scanner script
+        if: hashFiles('scripts/scan_internal_refs.py') == ''
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: codemie-ai/ci-workflows
+          ref: ${{ inputs.ci-workflows-ref }}
+          path: .ci-workflows-temp
+          sparse-checkout: |
+            scripts/scan_internal_refs.py
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Setup scanner script
+        shell: bash
+        run: |
+          mkdir -p "${RUNNER_TEMP}/ci-workflows-scripts"
+          if [ -f ".ci-workflows-temp/scripts/scan_internal_refs.py" ]; then
+            cp .ci-workflows-temp/scripts/scan_internal_refs.py "${RUNNER_TEMP}/ci-workflows-scripts/scan_internal_refs.py"
+            rm -rf .ci-workflows-temp
+          elif [ -f "scripts/scan_internal_refs.py" ]; then
+            cp scripts/scan_internal_refs.py "${RUNNER_TEMP}/ci-workflows-scripts/scan_internal_refs.py"
+          else
+            echo "::error::Scanner script scan_internal_refs.py not found"
+            exit 1
+          fi
+
+      - name: Setup Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Scan for internal references
+        shell: bash
+        env:
+          SCAN_PATH: ${{ inputs.path }}
+          DENYLIST_PATH: ${{ inputs.denylist-path }}
+        run: |
+          if [ -d "$SCAN_PATH" ]; then
+            SCAN_ARGS=("--tree" "$SCAN_PATH")
+          elif [ -f "$SCAN_PATH" ]; then
+            SCAN_ARGS=("--files" "$SCAN_PATH")
+          else
+            echo "::error::Target path '$SCAN_PATH' does not exist"
+            exit 1
+          fi
+
+          if [ -n "$DENYLIST_PATH" ]; then
+            if [ -f "$DENYLIST_PATH" ]; then
+              SCAN_ARGS+=("--denylist" "$DENYLIST_PATH")
+            else
+              echo "::error::Denylist file '$DENYLIST_PATH' not found"
+              exit 1
+            fi
+          fi
+
+          echo "Scanning target: $SCAN_PATH"
+          set -o pipefail
+          python3 "${RUNNER_TEMP}/ci-workflows-scripts/scan_internal_refs.py" "${SCAN_ARGS[@]}" 2>&1 | tee "${RUNNER_TEMP}/internal-refs.log"
+
+      - name: Scan summary
+        if: always()
+        shell: bash
+        env:
+          SCAN_PATH: ${{ inputs.path }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          echo "### Internal References Scan" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target path:** \`$SCAN_PATH\`" >> $GITHUB_STEP_SUMMARY
+          if [ "$JOB_STATUS" = "success" ]; then
+            echo "- **Result:** Passed (no internal references found)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Result:** Failed (internal references detected)" >> $GITHUB_STEP_SUMMARY
+            if [ -f "${RUNNER_TEMP}/internal-refs.log" ] && [ -s "${RUNNER_TEMP}/internal-refs.log" ]; then
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "#### Findings" >> $GITHUB_STEP_SUMMARY
+              echo '```text' >> $GITHUB_STEP_SUMMARY
+              cat "${RUNNER_TEMP}/internal-refs.log" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
