@@ -80,11 +80,10 @@ jobs:
       node-version: '20'                    # optional, defaults to '20'
 ```
 
-The workflow automatically detects whether `package-lock.json` is present:
-- If `package-lock.json` exists: runs `npm ci` with npm cache enabled.
-- If no lockfile exists: runs `npm install --no-audit --no-fund`.
-- A custom install command can be specified via `install-command`.
-- Custom check command can be specified via `command` (defaults to `npm run knip:check`).
+The workflow installs dependencies and runs the Knip check:
+- Runs `npm ci` with npm cache enabled (requires `package-lock.json` in the working directory).
+- Runs `npm run knip:check`.
+- Execution timeout can be configured via `timeout-minutes` (defaults to 10).
 
 ## Releasing
 

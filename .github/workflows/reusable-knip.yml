@@ -11,18 +11,14 @@ on:
         description: Node.js version
         type: string
         default: '20'
-      install-command:
-        description: Custom command to install dependencies (if empty, auto-detects based on package-lock.json)
-        type: string
-        default: ''
-      command:
-        description: Command to run Knip check
-        type: string
-        default: npm run knip:check
       runner:
         description: GitHub Actions runner label
         type: string
         default: ubuntu-latest
+      timeout-minutes:
+        description: Maximum time in minutes for the job to run
+        type: number
+        default: 10
 
 permissions:
   contents: read
@@ -31,6 +27,7 @@ jobs:
   knip:
     name: Unused Code & Dependencies Check
     runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout-minutes }}
 
     defaults:
       run:
@@ -42,38 +39,15 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Check for package-lock.json
-        id: check-lockfile
-        run: |
-          if [ -f "package-lock.json" ]; then
-            echo "has_lockfile=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_lockfile=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Setup Node.js (with npm cache)
-        if: steps.check-lockfile.outputs.has_lockfile == 'true'
+      - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ inputs.node-version }}
           cache: npm
           cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
 
-      - name: Setup Node.js (without cache)
-        if: steps.check-lockfile.outputs.has_lockfile != 'true'
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: ${{ inputs.node-version }}
-
       - name: Install dependencies
-        run: |
-          if [ -n "${{ inputs.install-command }}" ]; then
-            ${{ inputs.install-command }}
-          elif [ "${{ steps.check-lockfile.outputs.has_lockfile }}" = "true" ]; then
-            npm ci
-          else
-            npm install --no-audit --no-fund
-          fi
+        run: npm ci
 
       - name: Run Knip check
-        run: ${{ inputs.command }}
+        run: npm run knip:check
