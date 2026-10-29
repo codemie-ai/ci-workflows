@@ -25,7 +25,7 @@ on:
       node-version:
         description: Node.js version to use for publishing
         type: string
-        default: '20'
+        default: '24'
         required: false
       runner:
         description: GitHub Actions runner label
@@ -41,10 +41,6 @@ on:
         description: GitHub Actions environment name for deployment and secrets
         type: string
         default: release
-        required: false
-    secrets:
-      npm-token:
-        description: npm authentication token (optional if using OIDC / provenance)
         required: false
 
 permissions:
@@ -73,7 +69,6 @@ jobs:
       - name: Publish to npm
         shell: bash
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.npm-token }}
           PACKAGES_DIR: ${{ inputs.packages-dir }}
           DIST_TAG: ${{ inputs.dist-tag }}
           ACCESS: ${{ inputs.access }}
