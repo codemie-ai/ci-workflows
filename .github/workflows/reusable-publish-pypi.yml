@@ -37,10 +37,6 @@ on:
         type: string
         default: release
         required: false
-    secrets:
-      pypi-api-token:
-        description: PyPI API token for authentication (optional if using Trusted Publishing)
-        required: false
 
 permissions:
   contents: read
@@ -52,7 +48,7 @@ jobs:
     runs-on: ${{ inputs.runner }}
     environment: ${{ inputs.environment }}
     env:
-      HAS_PYPI_TOKEN: ${{ secrets.pypi-api-token != '' }}
+      HAS_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN != '' }}
 
     steps:
       - name: Download distribution artifact
@@ -66,7 +62,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages-dir: ${{ inputs.packages-dir }}
-          password: ${{ secrets.pypi-api-token }}
+          password: ${{ secrets.PYPI_API_TOKEN }}
           skip-existing: ${{ inputs.skip-existing }}
           attestations: ${{ inputs.attestations }}
           verbose: ${{ inputs.verbose }}
