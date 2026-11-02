@@ -1,0 +1,91 @@
+name: Reusable Publish NPM
+
+on:
+  workflow_call:
+    inputs:
+      artifact-name:
+        description: Name of the artifact containing the npm package to publish
+        type: string
+        required: true
+      packages-dir:
+        description: Directory containing packages to publish
+        type: string
+        default: dist/
+        required: false
+      dist-tag:
+        description: npm distribution tag
+        type: string
+        default: latest
+        required: false
+      access:
+        description: npm package access level
+        type: string
+        default: public
+        required: false
+      node-version:
+        description: Node.js version to use for publishing
+        type: string
+        default: '24'
+        required: false
+      runner:
+        description: GitHub Actions runner label
+        type: string
+        default: ubuntu-latest
+        required: false
+      environment:
+        description: GitHub Actions environment name for deployment and secrets
+        type: string
+        default: release
+        required: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ${{ inputs.runner }}
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Download package artifact
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.packages-dir }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Publish to npm
+        shell: bash
+        env:
+          PACKAGES_DIR: ${{ inputs.packages-dir }}
+          DIST_TAG: ${{ inputs.dist-tag }}
+          ACCESS: ${{ inputs.access }}
+        run: |
+          set -euo pipefail
+          npm publish "${PACKAGES_DIR%/}"/*.tgz --access "$ACCESS" --tag "$DIST_TAG"
+
+      - name: Publish summary
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          ARTIFACT_NAME: ${{ inputs.artifact-name }}
+          DIST_TAG: ${{ inputs.dist-tag }}
+          ACCESS: ${{ inputs.access }}
+        run: |
+          echo "### npm Publish Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifact:** \`$ARTIFACT_NAME\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dist-tag:** \`$DIST_TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Access:** \`$ACCESS\`" >> $GITHUB_STEP_SUMMARY
+          if [ "$JOB_STATUS" = "success" ]; then
+            echo "- **Result:** Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Result:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
