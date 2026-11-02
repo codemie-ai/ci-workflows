@@ -8,9 +8,9 @@ on:
         type: string
         required: true
       packages-dir:
-        description: Directory containing packages to publish
+        description: Directory containing packages to publish (must start with ./ so npm treats it as a local path)
         type: string
-        default: dist/
+        default: ./package/
         required: false
       dist-tag:
         description: npm distribution tag
