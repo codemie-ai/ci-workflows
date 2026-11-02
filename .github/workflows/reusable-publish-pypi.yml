@@ -52,8 +52,6 @@ jobs:
     name: Publish to PyPI
     runs-on: ${{ inputs.runner }}
     environment: ${{ inputs.environment }}
-    env:
-      HAS_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN != '' }}
 
     steps:
       - name: Download distribution artifact
@@ -62,21 +60,11 @@ jobs:
           name: ${{ inputs.artifact-name }}
           path: ${{ inputs.packages-dir }}
 
-      - name: Publish to PyPI (Token)
-        if: env.HAS_PYPI_TOKEN == 'true'
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages-dir: ${{ inputs.packages-dir }}
           password: ${{ secrets.PYPI_API_TOKEN }}
-          skip-existing: ${{ inputs.skip-existing }}
-          attestations: ${{ inputs.attestations }}
-          verbose: ${{ inputs.verbose }}
-
-      - name: Publish to PyPI (Trusted Publishing)
-        if: env.HAS_PYPI_TOKEN != 'true'
-        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
-        with:
-          packages-dir: ${{ inputs.packages-dir }}
           skip-existing: ${{ inputs.skip-existing }}
           attestations: ${{ inputs.attestations }}
           verbose: ${{ inputs.verbose }}
