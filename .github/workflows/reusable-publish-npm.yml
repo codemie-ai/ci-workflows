@@ -8,9 +8,9 @@ on:
         type: string
         required: true
       packages-dir:
-        description: Directory containing packages to publish
+        description: Directory containing packages to publish (must start with ./ so npm treats it as a local path)
         type: string
-        default: dist/
+        default: ./package/
         required: false
       dist-tag:
         description: npm distribution tag
@@ -68,9 +68,7 @@ jobs:
           ACCESS: ${{ inputs.access }}
         run: |
           set -euo pipefail
-          # The "./" prefix makes npm treat the path as a local tarball, not a GitHub user/repo shorthand
-          dir="${PACKAGES_DIR%/}"
-          npm publish "./${dir#./}"/*.tgz --access "$ACCESS" --tag "$DIST_TAG"
+          npm publish "${PACKAGES_DIR%/}"/*.tgz --access "$ACCESS" --tag "$DIST_TAG"
 
       - name: Publish summary
         if: always()
