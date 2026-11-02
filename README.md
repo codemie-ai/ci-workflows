@@ -93,6 +93,31 @@ The workflow installs dependencies and runs the Knip check:
 - Runs `npm run knip:check`.
 - Execution timeout can be configured via `timeout-minutes` (defaults to 10).
 
+### PyPI Publish (API token)
+
+```yaml
+jobs:
+  publish:
+    name: Publish to PyPI
+    needs: build
+    permissions:
+      contents: read
+      id-token: write
+    uses: codemie-ai/ci-workflows/.github/workflows/reusable-publish-pypi.yml@<COMMIT_SHA>
+    secrets:
+      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+    with:
+      artifact-name: python-dist
+      packages-dir: dist/ # optional, defaults to 'dist/'
+```
+
+The publish job runs in the `release` environment (input `environment`).
+A reusable workflow only sees secrets the caller passes, even when the secret
+exists only in that environment, so the caller must pass `PYPI_API_TOKEN`.
+Without it the token is empty and the workflow falls back to Trusted
+Publishing, which PyPI rejects for reusable workflows. Use the
+`publish-pypi` action below for Trusted Publishing.
+
 ### PyPI Publish (Trusted Publishing)
 
 ```yaml

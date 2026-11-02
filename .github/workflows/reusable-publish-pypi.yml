@@ -37,6 +37,11 @@ on:
         type: string
         default: release
         required: false
+    secrets:
+      # A reusable workflow only sees secrets the caller passes, even environment secrets.
+      PYPI_API_TOKEN:
+        description: PyPI API token. Pass it from the caller; it may exist only in the environment.
+        required: false
 
 permissions:
   contents: read
