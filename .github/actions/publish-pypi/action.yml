@@ -20,7 +20,7 @@ inputs:
   verbose:
     description: Show verbose output during publish
     required: false
-    default: 'true'
+    default: 'false'
 
 runs:
   using: composite
