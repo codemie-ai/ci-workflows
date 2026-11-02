@@ -68,7 +68,9 @@ jobs:
           ACCESS: ${{ inputs.access }}
         run: |
           set -euo pipefail
-          npm publish "${PACKAGES_DIR%/}"/*.tgz --access "$ACCESS" --tag "$DIST_TAG"
+          # The "./" prefix makes npm treat the path as a local tarball, not a GitHub user/repo shorthand
+          dir="${PACKAGES_DIR%/}"
+          npm publish "./${dir#./}"/*.tgz --access "$ACCESS" --tag "$DIST_TAG"
 
       - name: Publish summary
         if: always()
