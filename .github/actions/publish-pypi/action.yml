@@ -13,10 +13,6 @@ inputs:
     description: Directory containing packages to publish
     required: false
     default: dist/
-  skip-existing:
-    description: Do not fail if package distribution already exists on PyPI
-    required: false
-    default: 'false'
   attestations:
     description: Enable support for PEP 740 attestations
     required: false
@@ -40,7 +36,6 @@ runs:
       uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
       with:
         packages-dir: ${{ inputs.packages-dir }}
-        skip-existing: ${{ inputs.skip-existing }}
         attestations: ${{ inputs.attestations }}
         verbose: ${{ inputs.verbose }}
 
