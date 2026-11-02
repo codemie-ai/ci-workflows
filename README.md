@@ -114,8 +114,8 @@ jobs:
 The publish job runs in the `release` environment (input `environment`).
 A reusable workflow only sees secrets the caller passes, even when the secret
 exists only in that environment, so the caller must pass `PYPI_API_TOKEN`.
-Without it the token is empty and the workflow falls back to Trusted
-Publishing, which PyPI rejects for reusable workflows. Use the
+The secret is required: a caller that does not pass it fails at startup.
+PyPI rejects Trusted Publishing from reusable workflows, so use the
 `publish-pypi` action below for Trusted Publishing.
 
 ### PyPI Publish (Trusted Publishing)
