@@ -26,6 +26,14 @@ This repository contains reusable GitHub Actions workflows, composite actions, a
 
 Shared workflows use the `reusable-` prefix and contain the analysis steps.
 
+## Composite Actions
+
+| Action | Description |
+|---|---|
+| `.github/actions/publish-pypi` | Downloads a distribution artifact and publishes it to PyPI with Trusted Publishing |
+
+Composite actions run as steps inside the caller's job.
+
 ## Usage
 
 Add `.github/workflows/codeql.yml` to your repository:
@@ -84,6 +92,62 @@ The workflow installs dependencies and runs the Knip check:
 - Runs `npm ci` with npm cache enabled (requires `package-lock.json` in the working directory).
 - Runs `npm run knip:check`.
 - Execution timeout can be configured via `timeout-minutes` (defaults to 10).
+
+### PyPI Publish (API token)
+
+```yaml
+jobs:
+  publish:
+    name: Publish to PyPI
+    needs: build
+    permissions:
+      contents: read
+      id-token: write
+    uses: codemie-ai/ci-workflows/.github/workflows/reusable-publish-pypi.yml@<COMMIT_SHA>
+    secrets:
+      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+    with:
+      artifact-name: python-dist
+      packages-dir: dist/ # optional, defaults to 'dist/'
+```
+
+The publish job runs in the `release` environment (input `environment`).
+A reusable workflow only sees secrets the caller passes, even when the secret
+exists only in that environment, so the caller must pass `PYPI_API_TOKEN`.
+The secret is required: a caller that does not pass it fails at startup.
+The workflow publishes with the token only and has no Trusted Publishing
+fallback. PyPI rejects Trusted Publishing from reusable workflows, so use the
+`publish-pypi` action below for Trusted Publishing.
+
+### PyPI Publish (Trusted Publishing)
+
+```yaml
+jobs:
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: codemie-ai/ci-workflows/.github/actions/publish-pypi@<COMMIT_SHA>
+        with:
+          artifact-name: python-dist
+          packages-dir: dist/ # optional, defaults to 'dist/'
+```
+
+PyPI does not accept reusable workflows as Trusted Publishers: the OIDC token
+of a reusable workflow names `ci-workflows` in `job_workflow_ref`, and PyPI
+rejects it with `invalid-publisher`. This action runs inside the caller's job,
+so the token names the caller's workflow file.
+- Register a Trusted Publisher on PyPI for each project with the caller's
+  repository, workflow file name (for example `publish.yml`) and environment
+  (for example `release`).
+- The calling job must set `environment` and `id-token: write`.
+- The build job must upload the distributions as an artifact named
+  `artifact-name`.
 
 ## Releasing
 
