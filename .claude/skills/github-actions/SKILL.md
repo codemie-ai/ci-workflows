@@ -15,3 +15,4 @@ Read only the reference required for the task:
 | Prevent script injection; safely pass untrusted GitHub context via environment variables (`env:`) | `references/script-injection.md` |
 | Emit workflow annotations (`::error::`, `::warning::`, `::notice::`, `::debug::`); attach file and line numbers; group verbose logs into collapsible sections (`::group::`) | `references/logging.md` |
 | Generate Markdown reports on the workflow run page using `$GITHUB_STEP_SUMMARY`; format status tables, checklists, and collapsible `<details>` blocks | `references/step-summary.md` |
+| Write or review comments in workflows and actions; keep them short and link to the source of the reason instead of explaining it | `references/comments.md` |
