@@ -26,14 +26,6 @@ This repository contains reusable GitHub Actions workflows, composite actions, a
 
 Shared workflows use the `reusable-` prefix and contain the analysis steps.
 
-## Composite Actions
-
-| Action | Description |
-|---|---|
-| `.github/actions/publish-pypi` | Downloads a distribution artifact and publishes it to PyPI with Trusted Publishing |
-
-Composite actions run as steps inside the caller's job.
-
 ## Usage
 
 Add `.github/workflows/codeql.yml` to your repository:
@@ -116,10 +108,12 @@ A reusable workflow only sees secrets the caller passes, even when the secret
 exists only in that environment, so the caller must pass `PYPI_API_TOKEN`.
 The secret is required: a caller that does not pass it fails at startup.
 The workflow publishes with the token only and has no Trusted Publishing
-fallback. PyPI rejects Trusted Publishing from reusable workflows, so use the
-`publish-pypi` action below for Trusted Publishing.
+fallback. PyPI rejects Trusted Publishing from reusable workflows, so publish
+with `pypa/gh-action-pypi-publish` directly in the caller's job, as shown below.
 
 ### PyPI Publish (Trusted Publishing)
+
+Call `pypa/gh-action-pypi-publish` directly in the caller's publishing job:
 
 ```yaml
 jobs:
@@ -132,22 +126,30 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: codemie-ai/ci-workflows/.github/actions/publish-pypi@<COMMIT_SHA>
+      - uses: actions/download-artifact@<COMMIT_SHA> # vX.Y.Z
         with:
-          artifact-name: python-dist
+          name: python-dist
+          path: dist/
+
+      - uses: pypa/gh-action-pypi-publish@<COMMIT_SHA> # vX.Y.Z
+        with:
           packages-dir: dist/ # optional, defaults to 'dist/'
 ```
 
 PyPI does not accept reusable workflows as Trusted Publishers: the OIDC token
 of a reusable workflow names `ci-workflows` in `job_workflow_ref`, and PyPI
-rejects it with `invalid-publisher`. This action runs inside the caller's job,
-so the token names the caller's workflow file.
+rejects it with `invalid-publisher`.
+- Do not wrap `pypa/gh-action-pypi-publish` in a composite action, in
+  ci-workflows or in your repository. The action builds its Docker image from
+  `github.action_repository`, which then names the composite action's
+  repository, so the run fails with `denied` on `ghcr.io`. The pypa README
+  lists this as unsupported.
 - Register a Trusted Publisher on PyPI for each project with the caller's
   repository, workflow file name (for example `publish.yml`) and environment
   (for example `release`).
 - The calling job must set `environment` and `id-token: write`.
-- The build job must upload the distributions as an artifact named
-  `artifact-name`.
+- The build job must upload the distributions as an artifact, and keep the
+  build in a separate job from the publishing job.
 
 ## Releasing
 
